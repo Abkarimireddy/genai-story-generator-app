@@ -31,10 +31,4 @@ Welcome to the **GenAI Story Generator**, a creative storytelling web app powere
 
 ---
 
-##  How to Run Locally
 
-1. **Clone this repo:**
-
-```bash
-git clone https://github.com/Abkarimireddy/genai-story-app.git
-cd genai-story-app
