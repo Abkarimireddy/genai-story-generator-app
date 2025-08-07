@@ -4,6 +4,7 @@ import json
 import os
 import time
 import re
+import base64
 
 # -------------------------------
 # Page Configuration
@@ -44,6 +45,20 @@ st.markdown("""
         color: #2c3e50;
         text-align: justify;
         white-space: pre-line;
+    }
+    .input-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
+    }
+    .sidebar-content {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
     }
     .generate-btn {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -93,16 +108,48 @@ st.markdown("""
         font-size: 14px;
         color: #1565c0;
     }
+    .tts-controls {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+        border: 1px solid #dee2e6;
+        text-align: center;
+    }
+    .tts-button {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        margin: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    .tts-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    }
     #MainMenu, footer, header {visibility: hidden;}
     
-    /* Remove default streamlit padding/margins that create white boxes */
+    /* Remove empty spaces */
     .block-container {
         padding-top: 1rem;
     }
     
-    /* Ensure no extra spacing */
-    .stSelectbox, .stTextInput, .stTextArea {
-        margin-bottom: 1rem;
+    /* Streamlit specific styling fixes */
+    .stSelectbox > div > div {
+        background-color: white;
+    }
+    
+    .stTextInput > div > div {
+        background-color: white;
+    }
+    
+    .stTextArea > div > div {
+        background-color: white;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -118,19 +165,26 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------
-# API Configuration - FIXED
+# API Configuration
 # -------------------------------
 def get_api_credentials():
-    return {
-        "api_key": os.getenv("IBM_API_KEY", "your-api-key"),
-        "project_id": os.getenv("IBM_PROJECT_ID", "your-project-id"),
-        "region": os.getenv("IBM_REGION", "us-south")
-    }
+    try:
+        return {
+            "api_key": st.secrets["IBM_API_KEY"],
+            "project_id": st.secrets["IBM_PROJECT_ID"],
+            "region": st.secrets["IBM_REGION"]
+        }
+    except:
+        return {
+            "api_key": os.getenv("IBM_API_KEY", "your-api-key"),
+            "project_id": os.getenv("IBM_PROJECT_ID", "your-project-id"),
+            "region": os.getenv("IBM_REGION", "us-south")
+        }
 
 CREDENTIALS = get_api_credentials()
-VERSION = "2023-05-29"  # Keep original version
+VERSION = "2023-05-29"
 
-# Your original models - they ARE supported!
+# Multiple model options for better story generation
 MODEL_OPTIONS = {
     "Google Flan-UL2": "google/flan-ul2",
     "IBM Granite-13B": "ibm/granite-13b-instruct-v2",
@@ -187,7 +241,7 @@ def create_enhanced_story_prompt(character_name, story_type, context, writing_st
     structure = story_structures.get(story_type.lower(), story_structures["adventure"])
     
     # Enhanced prompt with better instructions
-    prompt = f"""Write a compelling {story_type.lower()} story with the following specifications:
+    prompt = f"""You are a professional creative writer. Write a compelling {story_type.lower()} story following these specifications:
 
 STORY REQUIREMENTS:
 - Main Character: {character_name}
@@ -200,20 +254,32 @@ STORY REQUIREMENTS:
 STORY CONTEXT:
 {context}
 
-STRUCTURE:
+STRUCTURE TO FOLLOW:
 - Opening: {structure['opening']}
 - Development: {structure['development']}
 - Climax: {structure['climax']}
 - Resolution: {structure['resolution']}
 
-Write a complete, engaging story with vivid descriptions, compelling characters, and natural dialogue. Create clear paragraphs and maintain consistent pacing throughout.
+WRITING GUIDELINES:
+1. Create vivid, immersive descriptions that engage the senses
+2. Develop realistic, relatable characters with clear motivations
+3. Use natural, engaging dialogue that reveals character personality
+4. Show don't tell - use actions and dialogue to convey emotions
+5. Maintain consistent pacing appropriate to the genre
+6. Include specific details that bring scenes to life
+7. Create emotional resonance with the reader
+8. Ensure plot events flow logically and build upon each other
+9. Use varied sentence structure for engaging prose
+10. End with a satisfying conclusion that feels earned
+
+Write a complete, well-structured story that captures the reader's attention from the first sentence and maintains engagement throughout. Focus on quality storytelling with rich descriptions, compelling characters, and a satisfying narrative arc.
 
 Story:"""
 
     return prompt
 
 # -------------------------------
-# Fixed IBM Watson API Integration
+# Enhanced IBM Watson API Integration
 # -------------------------------
 def get_iam_token(api_key):
     """Get IBM Cloud IAM token with better error handling"""
@@ -234,13 +300,12 @@ def get_iam_token(api_key):
         return None
 
 def generate_story_with_watson(prompt, model_id, max_tokens, temperature, creativity_settings):
-    """Fixed story generation with correct watsonx.ai API endpoint"""
+    """Enhanced story generation with better parameters and error handling"""
     token = get_iam_token(CREDENTIALS["api_key"])
     if not token:
         return "Error: Could not authenticate with IBM Watson. Please check your API credentials."
 
     try:
-        # Fixed: Use correct watsonx.ai endpoint
         url = f"https://{CREDENTIALS['region']}.ml.cloud.ibm.com/ml/v1/text/generation?version={VERSION}"
         headers = {
             "Authorization": f"Bearer {token}",
@@ -267,24 +332,7 @@ def generate_story_with_watson(prompt, model_id, max_tokens, temperature, creati
             }
         }
         
-        # Debug: Show detailed request info
-        st.info(f"🔍 Debug Info:")
-        st.info(f"Model: {model_id}")
-        st.info(f"Region: {CREDENTIALS['region']}")
-        st.info(f"API Version: {VERSION}")
-        st.info(f"Full URL: {url}")
-        
-        # Try the request
         response = requests.post(url, headers=headers, json=payload, timeout=120)
-        
-        # Better error handling
-        if response.status_code == 404:
-            return f"Error: API endpoint not found. Please verify your IBM Watson configuration and model availability. Model: {model_id}"
-        elif response.status_code == 401:
-            return "Error: Authentication failed. Please check your API key and project ID."
-        elif response.status_code == 403:
-            return "Error: Access denied. Please verify your project permissions and instance ID."
-        
         response.raise_for_status()
         
         data = response.json()
@@ -292,10 +340,10 @@ def generate_story_with_watson(prompt, model_id, max_tokens, temperature, creati
             generated_text = data["results"][0]["generated_text"].strip()
             return post_process_story(generated_text)
         else:
-            return f"Error: No story generated. API Response: {data}"
+            return "Error: No story generated. Please try again with different parameters."
             
     except requests.RequestException as e:
-        return f"Error: Failed to generate story. Status: {response.status_code if 'response' in locals() else 'Unknown'}, Details: {str(e)}"
+        return f"Error: Failed to generate story. {str(e)}"
     except Exception as e:
         return f"Error: Unexpected error occurred. {str(e)}"
 
@@ -358,34 +406,142 @@ def get_story_statistics(story):
     }
 
 # -------------------------------
-# Fallback Local Story Generation
+# Text-to-Speech Functionality
 # -------------------------------
-def generate_local_story(character_name, story_type, context, setting, mood):
-    """Fallback story generation when API is not available"""
-    story_templates = {
-        "adventure": f"""The morning sun cast long shadows across {setting.lower()} as {character_name} prepared for what would become the most challenging day of their life. {context}
-
-The air was {mood.lower().split()[0]} as {character_name} stepped forward, heart pounding with anticipation. Every instinct told them to turn back, but something deeper—a calling they couldn't ignore—urged them onward.
-
-As the hours passed, obstacles seemed to emerge from nowhere. Each challenge tested not just {character_name}'s physical abilities, but their resolve and determination. The path ahead grew increasingly treacherous, yet with each step, they discovered inner strength they never knew existed.
-
-The final confrontation came suddenly. Standing at the precipice of their greatest fear, {character_name} realized that the journey had changed them fundamentally. The person who had started this adventure was gone, replaced by someone stronger, wiser, and more capable than they had ever imagined possible.
-
-As the dust settled and the immediate danger passed, {character_name} looked back on their journey with a mixture of exhaustion and pride. They had not only survived but had emerged victorious, carrying with them lessons that would last a lifetime.""",
-        
-        "mystery": f"""The first clue appeared in {setting.lower()} on a {mood.lower()} Tuesday morning. {character_name} had seen enough puzzles in their career to know when something didn't add up, and this case was full of contradictions. {context}
-
-As {character_name} began to investigate, a pattern slowly emerged from the chaos. Each piece of evidence seemed to point in a different direction, creating a web of confusion that would challenge even the most experienced investigator.
-
-Red herrings appeared at every turn, deliberately placed to mislead and confuse. But {character_name} had learned to look beyond the obvious, to see connections that others might miss. The breakthrough came when they realized they had been asking the wrong questions entirely.
-
-The truth, when it finally revealed itself, was both shocking and inevitable. All the pieces fell into place with startling clarity, showing how carefully orchestrated the entire scheme had been from the beginning.
-
-In the end, justice was served, but {character_name} couldn't shake the feeling that some mysteries are better left unsolved. The case was closed, but the questions it raised would linger for years to come."""
-    }
+def text_to_speech_html(text, voice="en-US-AriaNeural", rate=1.0, pitch=1.0):
+    """Generate HTML with JavaScript for text-to-speech"""
+    # Clean text for TTS (remove special characters that might cause issues)
+    clean_text = re.sub(r'[^\w\s\.,!?;:]', '', text)
     
-    template = story_templates.get(story_type.lower(), story_templates["adventure"])
-    return template
+    tts_html = f"""
+    <div class="tts-controls">
+        <h4>🎧 Listen to Your Story</h4>
+        <button onclick="speakText()" class="tts-button" id="speakBtn">🔊 Play Story</button>
+        <button onclick="pauseText()" class="tts-button" id="pauseBtn">⏸️ Pause</button>
+        <button onclick="stopText()" class="tts-button" id="stopBtn">⏹️ Stop</button>
+        <br>
+        <label for="voiceSelect">Voice: </label>
+        <select id="voiceSelect" onchange="changeVoice()" style="margin: 0.5rem; padding: 0.25rem;">
+            <option value="0">Default Voice</option>
+        </select>
+        <br>
+        <label for="rateSlider">Speed: </label>
+        <input type="range" id="rateSlider" min="0.5" max="2" value="{rate}" step="0.1" style="margin: 0.5rem;">
+        <span id="rateValue">{rate}x</span>
+        <br>
+        <label for="pitchSlider">Pitch: </label>
+        <input type="range" id="pitchSlider" min="0.5" max="2" value="{pitch}" step="0.1" style="margin: 0.5rem;">
+        <span id="pitchValue">{pitch}x</span>
+        <div id="ttsStatus" style="margin-top: 0.5rem; font-style: italic;"></div>
+    </div>
+    
+    <script>
+        let speechSynthesis = window.speechSynthesis;
+        let currentUtterance = null;
+        let voices = [];
+        let isPaused = false;
+        let storyText = `{clean_text}`;
+        
+        // Load voices
+        function loadVoices() {{
+            voices = speechSynthesis.getVoices();
+            let voiceSelect = document.getElementById('voiceSelect');
+            voiceSelect.innerHTML = '<option value="0">Default Voice</option>';
+            
+            voices.forEach((voice, index) => {{
+                if (voice.lang.startsWith('en')) {{
+                    let option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = voice.name + ' (' + voice.lang + ')';
+                    voiceSelect.appendChild(option);
+                }}
+            }});
+        }}
+        
+        // Initialize voices
+        if (speechSynthesis.onvoiceschanged !== undefined) {{
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }}
+        loadVoices();
+        
+        function speakText() {{
+            if (isPaused) {{
+                speechSynthesis.resume();
+                isPaused = false;
+                document.getElementById('ttsStatus').textContent = 'Playing...';
+                return;
+            }}
+            
+            if (speechSynthesis.speaking) {{
+                speechSynthesis.cancel();
+            }}
+            
+            currentUtterance = new SpeechSynthesisUtterance(storyText);
+            
+            // Set voice
+            let voiceIndex = document.getElementById('voiceSelect').value;
+            if (voiceIndex > 0 && voices[voiceIndex]) {{
+                currentUtterance.voice = voices[voiceIndex];
+            }}
+            
+            // Set rate and pitch
+            currentUtterance.rate = parseFloat(document.getElementById('rateSlider').value);
+            currentUtterance.pitch = parseFloat(document.getElementById('pitchSlider').value);
+            
+            // Event listeners
+            currentUtterance.onstart = function() {{
+                document.getElementById('ttsStatus').textContent = 'Playing...';
+            }};
+            
+            currentUtterance.onend = function() {{
+                document.getElementById('ttsStatus').textContent = 'Finished';
+            }};
+            
+            currentUtterance.onerror = function(event) {{
+                document.getElementById('ttsStatus').textContent = 'Error: ' + event.error;
+            }};
+            
+            speechSynthesis.speak(currentUtterance);
+        }}
+        
+        function pauseText() {{
+            if (speechSynthesis.speaking && !isPaused) {{
+                speechSynthesis.pause();
+                isPaused = true;
+                document.getElementById('ttsStatus').textContent = 'Paused';
+            }}
+        }}
+        
+        function stopText() {{
+            speechSynthesis.cancel();
+            isPaused = false;
+            document.getElementById('ttsStatus').textContent = 'Stopped';
+        }}
+        
+        function changeVoice() {{
+            // Voice will be applied on next play
+        }}
+        
+        // Update slider values
+        document.getElementById('rateSlider').oninput = function() {{
+            document.getElementById('rateValue').textContent = this.value + 'x';
+        }};
+        
+        document.getElementById('pitchSlider').oninput = function() {{
+            document.getElementById('pitchValue').textContent = this.value + 'x';
+        }};
+    </script>
+    """
+    
+    return tts_html
+
+# -------------------------------
+# Session State Management
+# -------------------------------
+if 'generated_story' not in st.session_state:
+    st.session_state.generated_story = ""
+if 'story_stats' not in st.session_state:
+    st.session_state.story_stats = {}
 
 # -------------------------------
 # Enhanced UI Elements
@@ -481,20 +637,17 @@ with st.sidebar:
         "top_p": top_p,
         "repetition_penalty": repetition_penalty
     }
-    
-    # Fallback option
-    use_fallback = st.checkbox("Use Local Fallback if API fails", help="Generate a basic story locally if the IBM Watson API is unavailable")
 
 # -------------------------------
 # Story Generation
 # -------------------------------
 with col1:
     # API Credentials Check
-    if CREDENTIALS["api_key"] == "your-api-key":
+    if CREDENTIALS["api_key"] in ["your-api-key", "4XXXXXXXXX..."]:
         st.markdown("""
         <div class="warning-box">
             <strong>⚠️ API Setup Required</strong><br>
-            Please set your IBM Watson API credentials as environment variables:
+            Please set your IBM Watson API credentials in .streamlit/secrets.toml or as environment variables:
             <ul>
                 <li>IBM_API_KEY</li>
                 <li>IBM_PROJECT_ID</li>
@@ -509,6 +662,8 @@ with col1:
             st.error("Please enter a character name.")
         elif not story_context.strip():
             st.error("Please provide story context to help generate a better story.")
+        elif CREDENTIALS["api_key"] in ["your-api-key", "4XXXXXXXXX..."]:
+            st.error("Please configure your IBM Watson API credentials.")
         else:
             # Show generation progress
             progress_bar = st.progress(0)
@@ -519,93 +674,95 @@ with col1:
             
             with st.spinner("Generating your story..."):
                 try:
-                    story = None
+                    # Create enhanced prompt
+                    status_text.text("📝 Crafting story prompt...")
+                    progress_bar.progress(40)
                     
-                    # Try IBM Watson API if credentials are configured
-                    if CREDENTIALS["api_key"] != "your-api-key":
-                        # Create enhanced prompt
-                        status_text.text("📝 Crafting story prompt...")
-                        progress_bar.progress(40)
-                        
-                        prompt = create_enhanced_story_prompt(
-                            character_name, story_type, story_context, 
-                            writing_style, length_category, mood, setting
-                        )
-                        
-                        # Generate story
-                        status_text.text("✨ AI is writing your story...")
-                        progress_bar.progress(60)
-                        
-                        story = generate_story_with_watson(
-                            prompt, model_id, max_tokens, temperature, creativity_settings
-                        )
-                        
-                        # If API fails and fallback is enabled, use local generation
-                        if story.startswith("Error") and use_fallback:
-                            status_text.text("🔄 Using fallback story generation...")
-                            story = generate_local_story(character_name, story_type, story_context, setting, mood)
+                    prompt = create_enhanced_story_prompt(
+                        character_name, story_type, story_context, 
+                        writing_style, length_category, mood, setting
+                    )
                     
-                    # Use local generation if no API credentials or if enabled
-                    elif use_fallback or CREDENTIALS["api_key"] == "your-api-key":
-                        status_text.text("📖 Generating story locally...")
-                        progress_bar.progress(80)
-                        story = generate_local_story(character_name, story_type, story_context, setting, mood)
+                    # Generate story
+                    status_text.text("✨ AI is writing your story...")
+                    progress_bar.progress(60)
+                    
+                    story = generate_story_with_watson(
+                        prompt, model_id, max_tokens, temperature, creativity_settings
+                    )
                     
                     progress_bar.progress(100)
                     status_text.text("✅ Story generated successfully!")
                     
-                    # Display results
-                    if story and not story.startswith("Error"):
-                        st.markdown("### 📖 Your Generated Story")
-                        
-                        # Story statistics
-                        stats = get_story_statistics(story)
-                        st.markdown(f"""
-                        <div class="story-stats">
-                            <strong>Story Statistics:</strong> 
-                            {stats['words']} words • {stats['sentences']} sentences • 
-                            {stats['paragraphs']} paragraphs • ~{stats['reading_time']} min read
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Display story
-                        st.markdown(f"""
-                        <div class="story-container">
-                            <div class="story-text">{story}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Success message and download
-                        st.markdown("""
-                        <div class="success-box">
-                            <strong>🎉 Story Generated Successfully!</strong><br>
-                            Your story has been crafted with care. Feel free to generate variations or try different settings.
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Download button
-                        filename = f"{character_name}_{story_type}_{setting.replace(' ', '_')}.txt"
-                        st.download_button(
-                            "📥 Download Story",
-                            story,
-                            filename,
-                            mime="text/plain",
-                            help="Download your story as a text file"
-                        )
-                        
-                        # Regeneration option
-                        if st.button("🔄 Generate Another Version"):
-                            st.rerun()
-                            
-                    else:
-                        st.error(story or "Failed to generate story. Please check your configuration.")
-                        
+                    # Store in session state
+                    if not story.startswith("Error"):
+                        st.session_state.generated_story = story
+                        st.session_state.story_stats = get_story_statistics(story)
+                    
+                    time.sleep(1)  # Brief pause to show completion
+                    
                 except Exception as e:
                     st.error(f"An unexpected error occurred: {str(e)}")
                     
                 finally:
                     progress_bar.empty()
                     status_text.empty()
+
+    # Display generated story
+    if st.session_state.generated_story and not st.session_state.generated_story.startswith("Error"):
+        st.markdown("### 📖 Your Generated Story")
+        
+        # Story statistics
+        stats = st.session_state.story_stats
+        st.markdown(f"""
+        <div class="story-stats">
+            <strong>Story Statistics:</strong> 
+            {stats['words']} words • {stats['sentences']} sentences • 
+            {stats['paragraphs']} paragraphs • ~{stats['reading_time']} min read
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display story
+        st.markdown(f"""
+        <div class="story-container">
+            <div class="story-text">{st.session_state.generated_story}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Text-to-Speech Controls
+        st.markdown("### 🎧 Audio Features")
+        tts_html = text_to_speech_html(st.session_state.generated_story)
+        st.components.v1.html(tts_html, height=300, scrolling=True)
+        
+        # Success message and download
+        st.markdown("""
+        <div class="success-box">
+            <strong>🎉 Story Generated Successfully!</strong><br>
+            Your story has been crafted with care. You can now listen to it or download it!
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Action buttons
+        col_download, col_regenerate = st.columns(2)
+        
+        with col_download:
+            filename = f"{character_name}_{story_type}_{setting.replace(' ', '_')}.txt"
+            st.download_button(
+                "📥 Download Story",
+                st.session_state.generated_story,
+                filename,
+                mime="text/plain",
+                help="Download your story as a text file"
+            )
+        
+        with col_regenerate:
+            if st.button("🔄 Generate Another Version"):
+                st.session_state.generated_story = ""
+                st.session_state.story_stats = {}
+                st.rerun()
+    
+    elif st.session_state.generated_story and st.session_state.generated_story.startswith("Error"):
+        st.error(st.session_state.generated_story)
 
 # -------------------------------
 # Additional Features
@@ -623,41 +780,4 @@ with st.expander("💡 Story Writing Tips"):
     - **Suspense**: Focus on what's at stake and create uncertainty
     - **Adventure**: Describe the quest or journey your character must undertake
     - **Fantasy**: Establish magical elements or otherworldly settings
-    - **Drama**: Emphasize emotional conflicts and relationships
-    - **Mystery**: Present a puzzle or crime that needs solving
-    - **Horror**: Create atmosphere with fear-inducing elements
-    """)
-
-with st.expander("🔧 Troubleshooting"):
-    st.markdown("""
-    **Common Issues & Solutions:**
-    - **404 Error**: Check your IBM Watson endpoint URL and model availability
-    - **401 Error**: Verify your API key and authentication
-    - **403 Error**: Ensure your project ID and instance ID are correct
-    - **Repetitive text**: Increase repetition penalty or try a different model
-    - **Story too short**: Increase max tokens or provide more context
-    - **Off-topic content**: Be more specific in your story context
-    
-    **IBM Watson Setup:**
-    1. Create a Watson Machine Learning service instance
-    2. Create a watsonx.ai project
-    3. Get your API key from IBM Cloud IAM
-    4. Copy your project ID from the project settings
-    5. Note your service region and instance ID
-    
-    **Model Recommendations:**
-    - **IBM Granite 13B Instruct**: Great for structured, instructional stories
-    - **IBM Granite 13B Chat**: Excellent for dialogue-heavy narratives
-    - **Meta Llama 2 70B**: Superior for complex, nuanced stories
-    - **IBM Granite 20B Code**: Good for technical or sci-fi stories
-    """)
-
-# -------------------------------
-# Footer
-# -------------------------------
-st.markdown("""
-<div class="footer">
-    <p>Powered by IBM WatsonX AI | Created with Streamlit | Enhanced Story Generation v2.1</p>
-    <p>💡 Tip: Experiment with different models and settings to discover your perfect story style!</p>
-</div>
-""", unsafe_allow_html=True)
+    - **Drama**: Emphasize    
