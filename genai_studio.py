@@ -4,7 +4,6 @@ import json
 import os
 import time
 import re
-import base64
 
 # -------------------------------
 # Page Configuration
@@ -76,14 +75,6 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
-    .footer {
-        text-align: center;
-        color: #666;
-        font-size: 14px;
-        margin-top: 3rem;
-        padding: 2rem 0;
-        border-top: 1px solid #eee;
-    }
     .warning-box {
         background: #fff3cd;
         border: 1px solid #ffeaa7;
@@ -134,12 +125,10 @@ st.markdown("""
     }
     #MainMenu, footer, header {visibility: hidden;}
     
-    /* Remove empty spaces */
     .block-container {
         padding-top: 1rem;
     }
     
-    /* Streamlit specific styling fixes */
     .stSelectbox > div > div {
         background-color: white;
     }
@@ -412,6 +401,8 @@ def text_to_speech_html(text, voice="en-US-AriaNeural", rate=1.0, pitch=1.0):
     """Generate HTML with JavaScript for text-to-speech"""
     # Clean text for TTS (remove special characters that might cause issues)
     clean_text = re.sub(r'[^\w\s\.,!?;:]', '', text)
+    # Escape quotes for JavaScript
+    clean_text = clean_text.replace('"', '\\"').replace("'", "\\'")
     
     tts_html = f"""
     <div class="tts-controls">
@@ -780,4 +771,33 @@ with st.expander("💡 Story Writing Tips"):
     - **Suspense**: Focus on what's at stake and create uncertainty
     - **Adventure**: Describe the quest or journey your character must undertake
     - **Fantasy**: Establish magical elements or otherworldly settings
-    - **Drama**: Emphasize    
+    - **Drama**: Emphasize character relationships and emotional conflicts
+    - **Mystery**: Present a puzzle or crime that needs to be solved
+    - **Horror**: Build tension through fear and the unknown
+    
+    **Writing Style Guide:**
+    - **Narrative**: Traditional storytelling with a clear narrator
+    - **Descriptive**: Rich, detailed descriptions of scenes and emotions
+    - **Dialogue-Heavy**: Character interactions drive the story forward
+    - **Action-Packed**: Fast-paced with lots of movement and excitement
+    - **Literary**: Sophisticated language with deeper themes and symbolism
+    - **Cinematic**: Visual storytelling like a movie script
+    
+    **Pro Tips:**
+    - Use specific, concrete details rather than vague descriptions
+    - Start your story in the middle of action or conflict
+    - Create relatable characters with clear goals and obstacles
+    - Build tension through pacing and withholding information
+    - End with a satisfying resolution that feels earned
+    """)
+
+# -------------------------------
+# Footer
+# -------------------------------
+st.markdown("""
+<div class="footer">
+    <p>✨ <strong>GenAI Story Generator</strong> - Powered by IBM Watson AI ✨</p>
+    <p>Created with ❤️ by Abi Karimireddy | Built with Streamlit</p>
+    <p><em>Generate endless stories with the power of artificial intelligence</em></p>
+</div>
+""", unsafe_allow_html=True)
