@@ -143,7 +143,7 @@ MODEL_OPTIONS = {
 # FIXED Prompt Builder - Ensures Character Name & Settings Match
 # -------------------------------
 def create_story_prompt(character_name, story_type, context, writing_style, length_category, mood, setting):
-    """Create a precise prompt that enforces all parameters"""
+    """Create a precise prompt that enforces all parameters and story context"""
     
     # Word count mapping
     word_counts = {
@@ -153,67 +153,34 @@ def create_story_prompt(character_name, story_type, context, writing_style, leng
     }
     target_words = word_counts[length_category]
     
-    # Genre-specific instructions
-    genre_instructions = {
-        "suspense": "Create tension, mystery, and anticipation. Include cliffhangers and uncertain outcomes.",
-        "adventure": "Include action, quests, challenges, and heroic journeys. Focus on exciting events.",
-        "fantasy": "Include magic, mythical creatures, supernatural powers, or enchanted worlds.",
-        "drama": "Focus on emotions, relationships, conflicts, and character development.",
-        "mystery": "Include puzzles, clues, investigation, and secrets to be uncovered.",
-        "horror": "Create fear, dread, scary atmosphere, and frightening situations."
-    }
-    
-    # Setting descriptions
-    setting_details = {
-        "Modern City": "urban environment with skyscrapers, busy streets, and city life",
-        "Small Town": "close-knit community with familiar faces and quiet streets",
-        "Fantasy Realm": "magical world with enchanted forests, castles, and mythical beings",
-        "Space Station": "futuristic setting in space with advanced technology",
-        "Medieval Castle": "ancient stone fortress with knights, nobles, and medieval life",
-        "Haunted House": "spooky old mansion with creaking floors and ghostly presence",
-        "Desert Island": "tropical island surrounded by ocean, isolated and natural",
-        "Underground Bunker": "hidden underground facility with artificial lighting",
-        "Forest": "wooded area with tall trees, wildlife, and natural wilderness",
-        "Other": "unique atmospheric location"
-    }
-    
-    # Mood descriptors
-    mood_styles = {
-        "Dark & Mysterious": "dark, mysterious, shadowy, ominous atmosphere",
-        "Light & Hopeful": "bright, optimistic, cheerful, uplifting tone",
-        "Intense & Thrilling": "high-energy, exciting, adrenaline-filled, gripping",
-        "Melancholic": "sad, reflective, sorrowful, bittersweet mood",
-        "Humorous": "funny, witty, amusing, lighthearted and comedic",
-        "Romantic": "loving, passionate, tender, heartwarming romance",
-        "Eerie": "spooky, unsettling, creepy, supernatural atmosphere",
-        "Inspirational": "uplifting, motivating, encouraging, triumphant spirit"
-    }
-    
-    prompt = f"""Write a {story_type.lower()} story with these EXACT requirements:
+    # Enhanced prompt that focuses on the provided context
+    prompt = f"""You are a professional story writer. Write a complete {story_type.lower()} story that follows this EXACT plot and context:
 
-PROTAGONIST: The main character must be named "{character_name}" (use this exact name)
-GENRE: {story_type} - {genre_instructions.get(story_type.lower(), 'engaging narrative')}
-SETTING: {setting} - {setting_details.get(setting, 'atmospheric location')}
-MOOD: {mood} - {mood_styles.get(mood, 'engaging tone')}
-STYLE: {writing_style} approach
-LENGTH: {target_words} words
+MAIN CHARACTER: {character_name} (use this exact name throughout)
+SETTING: {setting} 
+GENRE: {story_type}
+MOOD: {mood}
+WRITING STYLE: {writing_style}
+TARGET LENGTH: {target_words} words
 
-STORY CONTEXT TO INCLUDE:
+MANDATORY STORY CONTEXT (you MUST follow this plot):
 {context}
 
-STRICT REQUIREMENTS:
-1. Start the story immediately with {character_name} in the {setting}
-2. The story MUST be {story_type.lower()} genre throughout
-3. Maintain {mood.lower()} mood in every paragraph  
-4. Use the character name "{character_name}" multiple times
-5. Include specific {setting} details and atmosphere
-6. Incorporate the provided context naturally
-7. Write in {writing_style.lower()} style
-8. Make it exactly {target_words} words
+CRITICAL INSTRUCTIONS:
+1. Follow the provided story context EXACTLY - do not deviate from the plot points given
+2. Use "{character_name}" as the protagonist's name throughout
+3. Maintain {story_type.lower()} genre elements consistently
+4. Keep the {mood.lower()} atmosphere throughout
+5. Set the story in {setting} with appropriate details
+6. Write a complete story with proper beginning, middle, and satisfying ending
+7. Include dialogue and action that advances the plot
+8. Make sure all plot points from the context are included and resolved
+9. Write approximately {target_words} words
+10. End the story properly - do not leave it incomplete or cut off
 
-Begin the story now:"""
+Remember: The story context provided contains the EXACT plot you must follow. Do not change major plot points, character names, or the sequence of events. Expand on the details while staying true to the given storyline.
 
-    return prompt
+Write the complete story now:
 
 # -------------------------------
 # FIXED IBM Watson API Integration
@@ -253,13 +220,14 @@ def generate_story_watson(prompt, model_id, max_tokens, temperature):
             "parameters": {
                 "temperature": temperature,
                 "max_new_tokens": max_tokens,
-                "min_new_tokens": max(150, max_tokens // 3),
-                "top_k": 50,
-                "top_p": 0.9,
-                "repetition_penalty": 1.2,
+                "min_new_tokens": max(200, max_tokens // 2),  # Ensure substantial length
+                "top_k": 40,
+                "top_p": 0.85,
+                "repetition_penalty": 1.3,
                 "decoding_method": "sample",
-                "stop_sequences": ["THE END", "---", "STORY COMPLETE"],
-                "include_stop_sequence": False
+                "stop_sequences": ["THE END", "---", "STORY COMPLETE", "[END]"],
+                "include_stop_sequence": False,
+                "truncate_input_tokens": 4000
             }
         }
         
