@@ -4,6 +4,7 @@ import json
 import os
 import time
 import re
+import base64
 
 # -------------------------------
 # Page Configuration
@@ -44,6 +45,20 @@ st.markdown("""
         color: #2c3e50;
         text-align: justify;
         white-space: pre-line;
+    }
+    .input-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
+    }
+    .sidebar-content {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
     }
     .generate-btn {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -93,16 +108,48 @@ st.markdown("""
         font-size: 14px;
         color: #1565c0;
     }
+    .tts-controls {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+        border: 1px solid #dee2e6;
+        text-align: center;
+    }
+    .tts-button {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        margin: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    .tts-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    }
     #MainMenu, footer, header {visibility: hidden;}
     
-    /* Remove default streamlit padding/margins that create white boxes */
+    /* Remove empty spaces */
     .block-container {
         padding-top: 1rem;
     }
     
-    /* Ensure no extra spacing */
-    .stSelectbox, .stTextInput, .stTextArea {
-        margin-bottom: 1rem;
+    /* Streamlit specific styling fixes */
+    .stSelectbox > div > div {
+        background-color: white;
+    }
+    
+    .stTextInput > div > div {
+        background-color: white;
+    }
+    
+    .stTextArea > div > div {
+        background-color: white;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -121,11 +168,18 @@ st.markdown("""
 # API Configuration
 # -------------------------------
 def get_api_credentials():
-    return {
-        "api_key": os.getenv("IBM_API_KEY", "your-api-key"),
-        "project_id": os.getenv("IBM_PROJECT_ID", "your-project-id"),
-        "region": os.getenv("IBM_REGION", "us-south")
-    }
+    try:
+        return {
+            "api_key": st.secrets["IBM_API_KEY"],
+            "project_id": st.secrets["IBM_PROJECT_ID"],
+            "region": st.secrets["IBM_REGION"]
+        }
+    except:
+        return {
+            "api_key": os.getenv("IBM_API_KEY", "your-api-key"),
+            "project_id": os.getenv("IBM_PROJECT_ID", "your-project-id"),
+            "region": os.getenv("IBM_REGION", "us-south")
+        }
 
 CREDENTIALS = get_api_credentials()
 VERSION = "2023-05-29"
@@ -272,7 +326,7 @@ def generate_story_with_watson(prompt, model_id, max_tokens, temperature, creati
                 "top_p": creativity_settings.get("top_p", 0.9),
                 "decoding_method": "sample",
                 "repetition_penalty": creativity_settings.get("repetition_penalty", 1.3),
-                "stop_sequences": ["THE END", "---", "*", "\n\nTHE END"],
+                "stop_sequences": ["THE END", "---", "***", "\n\nTHE END"],
                 "random_seed": None,  # Allow for randomness
                 "include_stop_sequence": False
             }
@@ -352,6 +406,144 @@ def get_story_statistics(story):
     }
 
 # -------------------------------
+# Text-to-Speech Functionality
+# -------------------------------
+def text_to_speech_html(text, voice="en-US-AriaNeural", rate=1.0, pitch=1.0):
+    """Generate HTML with JavaScript for text-to-speech"""
+    # Clean text for TTS (remove special characters that might cause issues)
+    clean_text = re.sub(r'[^\w\s\.,!?;:]', '', text)
+    
+    tts_html = f"""
+    <div class="tts-controls">
+        <h4>🎧 Listen to Your Story</h4>
+        <button onclick="speakText()" class="tts-button" id="speakBtn">🔊 Play Story</button>
+        <button onclick="pauseText()" class="tts-button" id="pauseBtn">⏸️ Pause</button>
+        <button onclick="stopText()" class="tts-button" id="stopBtn">⏹️ Stop</button>
+        <br>
+        <label for="voiceSelect">Voice: </label>
+        <select id="voiceSelect" onchange="changeVoice()" style="margin: 0.5rem; padding: 0.25rem;">
+            <option value="0">Default Voice</option>
+        </select>
+        <br>
+        <label for="rateSlider">Speed: </label>
+        <input type="range" id="rateSlider" min="0.5" max="2" value="{rate}" step="0.1" style="margin: 0.5rem;">
+        <span id="rateValue">{rate}x</span>
+        <br>
+        <label for="pitchSlider">Pitch: </label>
+        <input type="range" id="pitchSlider" min="0.5" max="2" value="{pitch}" step="0.1" style="margin: 0.5rem;">
+        <span id="pitchValue">{pitch}x</span>
+        <div id="ttsStatus" style="margin-top: 0.5rem; font-style: italic;"></div>
+    </div>
+    
+    <script>
+        let speechSynthesis = window.speechSynthesis;
+        let currentUtterance = null;
+        let voices = [];
+        let isPaused = false;
+        let storyText = `{clean_text}`;
+        
+        // Load voices
+        function loadVoices() {{
+            voices = speechSynthesis.getVoices();
+            let voiceSelect = document.getElementById('voiceSelect');
+            voiceSelect.innerHTML = '<option value="0">Default Voice</option>';
+            
+            voices.forEach((voice, index) => {{
+                if (voice.lang.startsWith('en')) {{
+                    let option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = voice.name + ' (' + voice.lang + ')';
+                    voiceSelect.appendChild(option);
+                }}
+            }});
+        }}
+        
+        // Initialize voices
+        if (speechSynthesis.onvoiceschanged !== undefined) {{
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }}
+        loadVoices();
+        
+        function speakText() {{
+            if (isPaused) {{
+                speechSynthesis.resume();
+                isPaused = false;
+                document.getElementById('ttsStatus').textContent = 'Playing...';
+                return;
+            }}
+            
+            if (speechSynthesis.speaking) {{
+                speechSynthesis.cancel();
+            }}
+            
+            currentUtterance = new SpeechSynthesisUtterance(storyText);
+            
+            // Set voice
+            let voiceIndex = document.getElementById('voiceSelect').value;
+            if (voiceIndex > 0 && voices[voiceIndex]) {{
+                currentUtterance.voice = voices[voiceIndex];
+            }}
+            
+            // Set rate and pitch
+            currentUtterance.rate = parseFloat(document.getElementById('rateSlider').value);
+            currentUtterance.pitch = parseFloat(document.getElementById('pitchSlider').value);
+            
+            // Event listeners
+            currentUtterance.onstart = function() {{
+                document.getElementById('ttsStatus').textContent = 'Playing...';
+            }};
+            
+            currentUtterance.onend = function() {{
+                document.getElementById('ttsStatus').textContent = 'Finished';
+            }};
+            
+            currentUtterance.onerror = function(event) {{
+                document.getElementById('ttsStatus').textContent = 'Error: ' + event.error;
+            }};
+            
+            speechSynthesis.speak(currentUtterance);
+        }}
+        
+        function pauseText() {{
+            if (speechSynthesis.speaking && !isPaused) {{
+                speechSynthesis.pause();
+                isPaused = true;
+                document.getElementById('ttsStatus').textContent = 'Paused';
+            }}
+        }}
+        
+        function stopText() {{
+            speechSynthesis.cancel();
+            isPaused = false;
+            document.getElementById('ttsStatus').textContent = 'Stopped';
+        }}
+        
+        function changeVoice() {{
+            // Voice will be applied on next play
+        }}
+        
+        // Update slider values
+        document.getElementById('rateSlider').oninput = function() {{
+            document.getElementById('rateValue').textContent = this.value + 'x';
+        }};
+        
+        document.getElementById('pitchSlider').oninput = function() {{
+            document.getElementById('pitchValue').textContent = this.value + 'x';
+        }};
+    </script>
+    """
+    
+    return tts_html
+
+# -------------------------------
+# Session State Management
+# -------------------------------
+if 'generated_story' not in st.session_state:
+    st.session_state.generated_story = ""
+if 'story_stats' not in st.session_state:
+    st.session_state.story_stats = {}
+
+# -------------------------------
 # Enhanced UI Elements
 # -------------------------------
 col1, col2 = st.columns([2, 1])
@@ -386,7 +578,7 @@ with col1:
         )
 
 with st.sidebar:
-    st.markdown("### ⚙ Generation Settings")
+    st.markdown("### ⚙️ Generation Settings")
     
     # Model Selection
     selected_model_name = st.selectbox(
@@ -451,11 +643,11 @@ with st.sidebar:
 # -------------------------------
 with col1:
     # API Credentials Check
-    if CREDENTIALS["api_key"] == "your-api-key":
+    if CREDENTIALS["api_key"] in ["your-api-key", "4XXXXXXXXX..."]:
         st.markdown("""
         <div class="warning-box">
-            <strong>⚠ API Setup Required</strong><br>
-            Please set your IBM Watson API credentials as environment variables:
+            <strong>⚠️ API Setup Required</strong><br>
+            Please set your IBM Watson API credentials in .streamlit/secrets.toml or as environment variables:
             <ul>
                 <li>IBM_API_KEY</li>
                 <li>IBM_PROJECT_ID</li>
@@ -470,7 +662,7 @@ with col1:
             st.error("Please enter a character name.")
         elif not story_context.strip():
             st.error("Please provide story context to help generate a better story.")
-        elif CREDENTIALS["api_key"] == "your-api-key":
+        elif CREDENTIALS["api_key"] in ["your-api-key", "4XXXXXXXXX..."]:
             st.error("Please configure your IBM Watson API credentials.")
         else:
             # Show generation progress
@@ -502,52 +694,13 @@ with col1:
                     progress_bar.progress(100)
                     status_text.text("✅ Story generated successfully!")
                     
-                    # Display results
+                    # Store in session state
                     if not story.startswith("Error"):
-                        st.markdown("### 📖 Your Generated Story")
-                        
-                        # Story statistics
-                        stats = get_story_statistics(story)
-                        st.markdown(f"""
-                        <div class="story-stats">
-                            <strong>Story Statistics:</strong> 
-                            {stats['words']} words • {stats['sentences']} sentences • 
-                            {stats['paragraphs']} paragraphs • ~{stats['reading_time']} min read
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Display story
-                        st.markdown(f"""
-                        <div class="story-container">
-                            <div class="story-text">{story}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Success message and download
-                        st.markdown("""
-                        <div class="success-box">
-                            <strong>🎉 Story Generated Successfully!</strong><br>
-                            Your story has been crafted with care. Feel free to generate variations or try different settings.
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Download button
-                        filename = f"{character_name}{story_type}{setting.replace(' ', '_')}.txt"
-                        st.download_button(
-                            "📥 Download Story",
-                            story,
-                            filename,
-                            mime="text/plain",
-                            help="Download your story as a text file"
-                        )
-                        
-                        # Regeneration option
-                        if st.button("🔄 Generate Another Version"):
-                            st.rerun()
-                            
-                    else:
-                        st.error(story)
-                        
+                        st.session_state.generated_story = story
+                        st.session_state.story_stats = get_story_statistics(story)
+                    
+                    time.sleep(1)  # Brief pause to show completion
+                    
                 except Exception as e:
                     st.error(f"An unexpected error occurred: {str(e)}")
                     
@@ -555,39 +708,87 @@ with col1:
                     progress_bar.empty()
                     status_text.empty()
 
+    # Display generated story
+    if st.session_state.generated_story and not st.session_state.generated_story.startswith("Error"):
+        st.markdown("### 📖 Your Generated Story")
+        
+        # Story statistics
+        stats = st.session_state.story_stats
+        st.markdown(f"""
+        <div class="story-stats">
+            <strong>Story Statistics:</strong> 
+            {stats['words']} words • {stats['sentences']} sentences • 
+            {stats['paragraphs']} paragraphs • ~{stats['reading_time']} min read
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display story
+        st.markdown(f"""
+        <div class="story-container">
+            <div class="story-text">{st.session_state.generated_story}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Text-to-Speech Controls
+        st.markdown("### 🎧 Audio Features")
+        tts_html = text_to_speech_html(st.session_state.generated_story)
+        st.components.v1.html(tts_html, height=300, scrolling=True)
+        
+        # Success message and download
+        st.markdown("""
+        <div class="success-box">
+            <strong>🎉 Story Generated Successfully!</strong><br>
+            Your story has been crafted with care. You can now listen to it or download it!
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Action buttons
+        col_download, col_regenerate = st.columns(2)
+        
+        with col_download:
+            filename = f"{character_name}_{story_type}_{setting.replace(' ', '_')}.txt"
+            st.download_button(
+                "📥 Download Story",
+                st.session_state.generated_story,
+                filename,
+                mime="text/plain",
+                help="Download your story as a text file"
+            )
+        
+        with col_regenerate:
+            if st.button("🔄 Generate Another Version"):
+                st.session_state.generated_story = ""
+                st.session_state.story_stats = {}
+                st.rerun()
+    
+    elif st.session_state.generated_story and st.session_state.generated_story.startswith("Error"):
+        st.error(st.session_state.generated_story)
+
 # -------------------------------
 # Additional Features
 # -------------------------------
 with st.expander("💡 Story Writing Tips"):
     st.markdown("""
-    *For Better Stories:*
+    **For Better Stories:**
     - Provide detailed context about what happened to your character
     - Be specific about the setting and time period
     - Include emotional elements or conflicts in your context
     - Mention any specific themes you want explored
     - Try different creativity levels to find your preferred style
     
-    *Genre Tips:*
-    - *Suspense*: Focus on what's at stake and create uncertainty
-    - *Adventure*: Describe the quest or journey your character must undertake
-    - *Fantasy*: Establish magical elements or otherworldly settings
-    - *Drama*: Emphasize emotional conflicts and relationships
-    - *Mystery*: Present a puzzle or crime that needs solving
-    - *Horror*: Create atmosphere with fear-inducing elements
-    """)
-
-with st.expander("🔧 Troubleshooting"):
-    st.markdown("""
-    *Common Issues:*
-    - *Repetitive text*: Increase repetition penalty or try a different model
-    - *Story too short*: Increase max tokens or provide more context
-    - *Off-topic content*: Be more specific in your story context
-    - *Authentication errors*: Check your IBM Watson API credentials
+    **Genre Tips:**
+    - **Suspense**: Focus on what's at stake and create uncertainty
+    - **Adventure**: Describe the quest or journey your character must undertake
+    - **Fantasy**: Establish magical elements or otherworldly settings
+    - **Drama**: Emphasize character relationships and emotional conflicts
+    - **Mystery**: Set up a puzzle or crime that needs solving
+    - **Horror**: Create atmosphere and psychological tension
     
-    *Model Recommendations:*
-    - *Google Flan-UL2*: Good for creative, diverse stories
-    - *IBM Granite-13B*: Excellent for structured narratives
-    - *Meta Llama-2-70B*: Great for dialogue and character development
+    **Model Selection:**
+    - **Google Flan-UL2**: Great for creative, detailed narratives
+    - **IBM Granite-13B**: Excellent for structured, coherent stories
+    - **Meta Llama-2-70B**: Best for dialogue and character development
+    - **Google Flan-T5-XXL**: Good for concise, focused storytelling
     """)
 
 # -------------------------------
@@ -595,7 +796,7 @@ with st.expander("🔧 Troubleshooting"):
 # -------------------------------
 st.markdown("""
 <div class="footer">
-    <p>Powered by IBM WatsonX AI | Created with Streamlit | Enhanced Story Generation v2.0</p>
-    <p>💡 Tip: Experiment with different models and settings to discover your perfect story style!</p>
+    <p>🤖 Powered by IBM Watson AI | Built with ❤️ using Streamlit</p>
+    <p>Create compelling stories with the power of generative AI</p>
 </div>
 """, unsafe_allow_html=True)
