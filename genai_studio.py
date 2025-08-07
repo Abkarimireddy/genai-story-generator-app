@@ -124,19 +124,18 @@ def get_api_credentials():
     return {
         "api_key": os.getenv("IBM_API_KEY", "your-api-key"),
         "project_id": os.getenv("IBM_PROJECT_ID", "your-project-id"),
-        "region": os.getenv("IBM_REGION", "us-south"),
-        "instance_id": os.getenv("IBM_INSTANCE_ID", "your-instance-id")  # Added missing instance ID
+        "region": os.getenv("IBM_REGION", "us-south")
     }
 
 CREDENTIALS = get_api_credentials()
-VERSION = "2024-05-31"  # Updated to newer version
+VERSION = "2023-05-29"  # Keep original version
 
-# Updated model options with correct model IDs for watsonx.ai
+# Keep original model options from your code
 MODEL_OPTIONS = {
-    "IBM Granite 13B Chat": "ibm/granite-13b-chat-v2",
-    "IBM Granite 13B Instruct": "ibm/granite-13b-instruct-v2", 
-    "Meta Llama 2 70B Chat": "meta-llama/llama-2-70b-chat",
-    "IBM Granite 20B Code": "ibm/granite-20b-code-instruct-v2"
+    "Google Flan-UL2": "google/flan-ul2",
+    "IBM Granite-13B": "ibm/granite-13b-instruct-v2",
+    "Meta Llama-2-70B": "meta-llama/llama-2-70b-chat",
+    "Google Flan-T5-XXL": "google/flan-t5-xxl"
 }
 
 # -------------------------------
@@ -255,14 +254,15 @@ def generate_story_with_watson(prompt, model_id, max_tokens, temperature, creati
             "input": prompt,
             "project_id": CREDENTIALS["project_id"],
             "parameters": {
-                "decoding_method": "greedy",
-                "max_new_tokens": max_tokens,
-                "min_new_tokens": max(200, max_tokens // 4),
                 "temperature": temperature,
+                "max_new_tokens": max_tokens,
+                "min_new_tokens": max(300, max_tokens // 3),  # Ensure longer stories
                 "top_k": creativity_settings.get("top_k", 50),
                 "top_p": creativity_settings.get("top_p", 0.9),
-                "repetition_penalty": creativity_settings.get("repetition_penalty", 1.1),
-                "stop_sequences": ["\n\nTHE END", "---", "***"],
+                "decoding_method": "sample",
+                "repetition_penalty": creativity_settings.get("repetition_penalty", 1.3),
+                "stop_sequences": ["THE END", "---", "***", "\n\nTHE END"],
+                "random_seed": None,  # Allow for randomness
                 "include_stop_sequence": False
             }
         }
@@ -462,7 +462,7 @@ with st.sidebar:
     # Creativity Settings
     temperature = st.slider(
         "Creativity Level",
-        0.1, 1.5, 0.7, 0.1,
+        0.1, 1.5, 0.8, 0.1,
         help="Higher values make the story more creative and unpredictable"
     )
     
@@ -470,7 +470,7 @@ with st.sidebar:
     with st.expander("Advanced Settings"):
         top_k = st.slider("Vocabulary Diversity", 10, 100, 50, 5)
         top_p = st.slider("Focus Level", 0.1, 1.0, 0.9, 0.05)
-        repetition_penalty = st.slider("Repetition Control", 1.0, 2.0, 1.1, 0.1)
+        repetition_penalty = st.slider("Repetition Control", 1.0, 2.0, 1.3, 0.1)
     
     creativity_settings = {
         "top_k": top_k,
@@ -492,12 +492,10 @@ with col1:
             <strong>⚠️ API Setup Required</strong><br>
             Please set your IBM Watson API credentials as environment variables:
             <ul>
-                <li>IBM_API_KEY: Your IBM Cloud API key</li>
-                <li>IBM_PROJECT_ID: Your watsonx.ai project ID</li>
-                <li>IBM_REGION: Your service region (e.g., us-south, eu-gb)</li>
-                <li>IBM_INSTANCE_ID: Your Watson Machine Learning instance ID</li>
+                <li>IBM_API_KEY</li>
+                <li>IBM_PROJECT_ID</li>
+                <li>IBM_REGION</li>
             </ul>
-            You can find these in your IBM Cloud Watson Machine Learning service instance.
         </div>
         """, unsafe_allow_html=True)
     
