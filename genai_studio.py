@@ -130,7 +130,7 @@ def get_api_credentials():
 CREDENTIALS = get_api_credentials()
 VERSION = "2023-05-29"  # Keep original version
 
-# Keep original model options from your code
+# Your original models - they ARE supported!
 MODEL_OPTIONS = {
     "Google Flan-UL2": "google/flan-ul2",
     "IBM Granite-13B": "ibm/granite-13b-instruct-v2",
@@ -267,10 +267,14 @@ def generate_story_with_watson(prompt, model_id, max_tokens, temperature, creati
             }
         }
         
-        # Debug: Show the request details (remove in production)
-        st.info(f"Using model: {model_id}")
-        st.info(f"API URL: {url}")
+        # Debug: Show detailed request info
+        st.info(f"🔍 Debug Info:")
+        st.info(f"Model: {model_id}")
+        st.info(f"Region: {CREDENTIALS['region']}")
+        st.info(f"API Version: {VERSION}")
+        st.info(f"Full URL: {url}")
         
+        # Try the request
         response = requests.post(url, headers=headers, json=payload, timeout=120)
         
         # Better error handling
@@ -642,9 +646,10 @@ with st.expander("🔧 Troubleshooting"):
     5. Note your service region and instance ID
     
     **Model Recommendations:**
-    - **IBM Granite 13B Chat**: Great for conversational stories
-    - **IBM Granite 13B Instruct**: Excellent for structured narratives
+    - **IBM Granite 13B Instruct**: Great for structured, instructional stories
+    - **IBM Granite 13B Chat**: Excellent for dialogue-heavy narratives
     - **Meta Llama 2 70B**: Superior for complex, nuanced stories
+    - **IBM Granite 20B Code**: Good for technical or sci-fi stories
     """)
 
 # -------------------------------
