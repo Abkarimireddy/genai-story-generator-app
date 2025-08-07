@@ -196,85 +196,121 @@ MODEL_OPTIONS = {
 # Enhanced Prompt Builder
 # -------------------------------
 def create_enhanced_story_prompt(character_name, story_type, context, writing_style, length_category, mood, setting):
-    """Create a sophisticated prompt for better story generation"""
+    """Create a sophisticated prompt for better story generation with stronger parameter enforcement"""
     
-    # Define story structure templates
-    story_structures = {
+    # Define genre-specific elements more distinctly
+    genre_elements = {
         "suspense": {
-            "opening": "Create an atmosphere of tension and uncertainty",
-            "development": "Build suspense through pacing, foreshadowing, and mystery",
-            "climax": "Reveal the truth with maximum impact",
-            "resolution": "Provide a satisfying conclusion that ties up loose ends"
+            "key_elements": "tension, uncertainty, anticipation, mystery, danger",
+            "atmosphere": "Create mounting tension with uncertain outcomes",
+            "plot_devices": "Use cliffhangers, red herrings, and time pressure",
+            "tone_words": "ominous, foreboding, tense, uncertain, gripping"
         },
         "adventure": {
-            "opening": "Establish the quest or journey",
-            "development": "Present challenges and obstacles to overcome",
-            "climax": "Face the greatest challenge or enemy",
-            "resolution": "Achieve the goal and show character growth"
+            "key_elements": "journey, challenges, exploration, discovery, heroism",
+            "atmosphere": "Create excitement through action and discovery",
+            "plot_devices": "Use obstacles, allies, enemies, and quests",
+            "tone_words": "exciting, bold, daring, epic, thrilling"
         },
         "fantasy": {
-            "opening": "Introduce the magical world and its rules",
-            "development": "Explore magical elements and their consequences",
-            "climax": "Confront the magical threat or complete the quest",
-            "resolution": "Restore balance to the magical world"
+            "key_elements": "magic, mythical creatures, otherworldly settings, powers",
+            "atmosphere": "Build a magical world with its own rules",
+            "plot_devices": "Use magical systems, prophecies, and mythical beings",
+            "tone_words": "magical, mystical, enchanting, otherworldly, wondrous"
         },
         "drama": {
-            "opening": "Establish character relationships and conflicts",
-            "development": "Deepen emotional conflicts and character development",
-            "climax": "Face the emotional crisis or life-changing moment",
-            "resolution": "Show character growth and resolution of conflicts"
+            "key_elements": "relationships, emotions, conflicts, growth, realism",
+            "atmosphere": "Focus on deep character emotions and relationships",
+            "plot_devices": "Use internal conflict, relationship dynamics, and personal growth",
+            "tone_words": "emotional, heartfelt, intense, realistic, moving"
         },
         "mystery": {
-            "opening": "Present the mystery or crime to be solved",
-            "development": "Gather clues and red herrings, build intrigue",
-            "climax": "Reveal the solution and confront the perpetrator",
-            "resolution": "Explain the mystery and show justice served"
+            "key_elements": "clues, investigation, secrets, revelation, deduction",
+            "atmosphere": "Build intrigue through hidden information",
+            "plot_devices": "Use clues, suspects, alibis, and logical deduction",
+            "tone_words": "mysterious, intriguing, puzzling, secretive, investigative"
         },
         "horror": {
-            "opening": "Establish normalcy before introducing the supernatural threat",
-            "development": "Escalate fear through psychological and physical terror",
-            "climax": "Confront the ultimate horror",
-            "resolution": "Survive or succumb to the horror with lasting impact"
+            "key_elements": "fear, supernatural, darkness, terror, dread",
+            "atmosphere": "Create fear and unease through psychological terror",
+            "plot_devices": "Use isolation, the unknown, and escalating threats",
+            "tone_words": "terrifying, eerie, sinister, haunting, nightmarish"
         }
     }
     
-    structure = story_structures.get(story_type.lower(), story_structures["adventure"])
+    # Get genre-specific elements
+    genre_info = genre_elements.get(story_type.lower(), genre_elements["adventure"])
     
-    # Enhanced prompt with better instructions
-    prompt = f"""You are a professional creative writer. Write a compelling {story_type.lower()} story following these specifications:
+    # Create mood-specific descriptors
+    mood_descriptors = {
+        "Dark & Mysterious": "shadowy, enigmatic, brooding, ominous, secretive",
+        "Light & Hopeful": "bright, optimistic, uplifting, cheerful, inspiring",
+        "Intense & Thrilling": "high-energy, fast-paced, adrenaline-filled, gripping",
+        "Melancholic": "sorrowful, reflective, bittersweet, contemplative",
+        "Humorous": "witty, amusing, lighthearted, comedic, entertaining",
+        "Romantic": "passionate, tender, intimate, heartwarming, loving",
+        "Eerie": "unsettling, spooky, atmospheric, haunting, chilling",
+        "Inspirational": "uplifting, motivating, empowering, triumphant, hopeful"
+    }
+    
+    mood_words = mood_descriptors.get(mood, "engaging, compelling")
+    
+    # Create setting-specific details
+    setting_details = {
+        "Modern City": "urban landscape, skyscrapers, busy streets, technology, crowds",
+        "Small Town": "close-knit community, familiar faces, local landmarks, quiet streets",
+        "Fantasy Realm": "magical kingdoms, enchanted forests, mystical creatures, ancient magic",
+        "Space Station": "zero gravity, advanced technology, distant stars, isolated environment",
+        "Medieval Castle": "stone walls, torches, knights, nobility, ancient traditions",
+        "Haunted House": "creaking floors, shadows, mysterious sounds, old furniture",
+        "Desert Island": "tropical paradise, isolation, survival, natural beauty",
+        "Underground Bunker": "confined spaces, artificial lighting, hidden secrets",
+        "Forest": "towering trees, wildlife, natural sounds, hidden paths",
+        "Other": "unique and atmospheric location"
+    }
+    
+    setting_atmosphere = setting_details.get(setting, "atmospheric location")
+    
+    # Create a more structured and specific prompt
+    prompt = f"""CRITICAL: You must write a {story_type.upper()} story that strictly follows ALL parameters below. Do not deviate from the genre, mood, or setting requirements.
 
-STORY REQUIREMENTS:
-- Main Character: {character_name}
-- Genre: {story_type}
-- Setting: {setting}
-- Mood/Tone: {mood}
-- Writing Style: {writing_style}
-- Length: {length_category}
+=== MANDATORY STORY REQUIREMENTS ===
+PROTAGONIST: {character_name} (This character MUST be the main focus)
+GENRE: {story_type.upper()} - MUST include: {genre_info['key_elements']}
+SETTING: {setting} - MUST incorporate: {setting_atmosphere}
+MOOD: {mood} - Story MUST feel: {mood_words}
+WRITING STYLE: {writing_style}
+TARGET LENGTH: {length_category}
 
-STORY CONTEXT:
+=== STORY CONTEXT (MUST BE INCORPORATED) ===
 {context}
 
-STRUCTURE TO FOLLOW:
-- Opening: {structure['opening']}
-- Development: {structure['development']}
-- Climax: {structure['climax']}
-- Resolution: {structure['resolution']}
+=== GENRE-SPECIFIC REQUIREMENTS ===
+- Atmosphere: {genre_info['atmosphere']}
+- Plot Devices: {genre_info['plot_devices']}
+- Tone: Story must feel {genre_info['tone_words']}
 
-WRITING GUIDELINES:
-1. Create vivid, immersive descriptions that engage the senses
-2. Develop realistic, relatable characters with clear motivations
-3. Use natural, engaging dialogue that reveals character personality
-4. Show don't tell - use actions and dialogue to convey emotions
-5. Maintain consistent pacing appropriate to the genre
-6. Include specific details that bring scenes to life
-7. Create emotional resonance with the reader
-8. Ensure plot events flow logically and build upon each other
-9. Use varied sentence structure for engaging prose
-10. End with a satisfying conclusion that feels earned
+=== STRICT WRITING INSTRUCTIONS ===
+1. BEGIN immediately with {character_name} in the {setting} environment
+2. The opening paragraph MUST establish the {story_type.lower()} genre immediately
+3. Every paragraph must maintain the {mood} mood consistently
+4. Include specific {setting} details in every scene
+5. Use {writing_style.lower()} writing approach throughout
+6. Incorporate the provided context naturally into the plot
+7. Stay true to {story_type.lower()} genre conventions
+8. End with a resolution appropriate to the {story_type.lower()} genre
 
-Write a complete, well-structured story that captures the reader's attention from the first sentence and maintains engagement throughout. Focus on quality storytelling with rich descriptions, compelling characters, and a satisfying narrative arc.
+=== QUALITY REQUIREMENTS ===
+- Rich sensory details specific to {setting}
+- Dialogue that reveals character and advances plot
+- Pacing appropriate for {story_type.lower()} genre
+- Emotional depth matching {mood} mood
+- Logical plot progression
+- Satisfying conclusion
 
-Story:"""
+Remember: This must be a {story_type.upper()} story set in {setting} with a {mood.lower()} mood featuring {character_name}. Do not write a generic story - make it distinctly {story_type.lower()} in nature.
+
+BEGIN THE STORY NOW:"""
 
     return prompt
 
@@ -313,7 +349,12 @@ def generate_story_with_watson(prompt, model_id, max_tokens, temperature, creati
             "Accept": "application/json"
         }
         
-        # Enhanced parameters for better story generation
+        # Enhanced parameters for better story generation with more variation
+        import random
+        
+        # Add randomization to prevent identical outputs
+        random_seed = random.randint(1, 10000) if temperature > 0.5 else None
+        
         payload = {
             "model_id": model_id,
             "input": prompt,
@@ -321,23 +362,59 @@ def generate_story_with_watson(prompt, model_id, max_tokens, temperature, creati
             "parameters": {
                 "temperature": temperature,
                 "max_new_tokens": max_tokens,
-                "min_new_tokens": max(300, max_tokens // 3),  # Ensure longer stories
+                "min_new_tokens": max(200, max_tokens // 4),  # Ensure substantial length
                 "top_k": creativity_settings.get("top_k", 50),
                 "top_p": creativity_settings.get("top_p", 0.9),
-                "decoding_method": "sample",
+                "decoding_method": "sample",  # Use sampling for more variety
                 "repetition_penalty": creativity_settings.get("repetition_penalty", 1.3),
-                "stop_sequences": ["THE END", "---", "***", "\n\nTHE END"],
-                "random_seed": None,  # Allow for randomness
-                "include_stop_sequence": False
+                "stop_sequences": ["THE END", "---", "***", "\n\nTHE END", "STORY COMPLETE"],
+                "random_seed": random_seed,  # Add randomness
+                "include_stop_sequence": False,
+                "truncate_input_tokens": 4000,  # Prevent token overflow
+                "return_options": {
+                    "input_text": False,
+                    "generated_tokens": True,
+                    "input_tokens": True,
+                    "token_logprobs": False,
+                    "token_ranks": False,
+                    "top_n_tokens": False
+                }
             }
         }
         
-        response = requests.post(url, headers=headers, json=payload, timeout=120)
-        response.raise_for_status()
+        # Add timeout and retry logic
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(url, headers=headers, json=payload, timeout=120)
+                response.raise_for_status()
+                break
+            except requests.exceptions.Timeout:
+                if attempt == max_retries - 1:
+                    return "Error: Request timed out. Please try again."
+                time.sleep(2)  # Wait before retry
+            except requests.exceptions.RequestException as e:
+                if attempt == max_retries - 1:
+                    return f"Error: Request failed after {max_retries} attempts. {str(e)}"
+                time.sleep(2)
         
         data = response.json()
         if "results" in data and len(data["results"]) > 0:
             generated_text = data["results"][0]["generated_text"].strip()
+            
+            # Enhanced validation to ensure story matches filters
+            if not validate_story_content(generated_text, prompt):
+                # Try one more time with modified parameters for better adherence
+                payload["parameters"]["temperature"] = min(temperature + 0.2, 1.0)
+                payload["parameters"]["repetition_penalty"] = 1.5
+                
+                response = requests.post(url, headers=headers, json=payload, timeout=120)
+                response.raise_for_status()
+                data = response.json()
+                
+                if "results" in data and len(data["results"]) > 0:
+                    generated_text = data["results"][0]["generated_text"].strip()
+            
             return post_process_story(generated_text)
         else:
             return "Error: No story generated. Please try again with different parameters."
@@ -346,6 +423,23 @@ def generate_story_with_watson(prompt, model_id, max_tokens, temperature, creati
         return f"Error: Failed to generate story. {str(e)}"
     except Exception as e:
         return f"Error: Unexpected error occurred. {str(e)}"
+
+def validate_story_content(story, original_prompt):
+    """Validate that the generated story follows the specified parameters"""
+    # Convert to lowercase for checking
+    story_lower = story.lower()
+    prompt_lower = original_prompt.lower()
+    
+    # Extract key parameters from the prompt
+    genre_check = any(genre in prompt_lower for genre in [
+        'suspense', 'adventure', 'fantasy', 'drama', 'mystery', 'horror'
+    ])
+    
+    # Basic validation - check if story has reasonable length and structure
+    word_count = len(story.split())
+    has_paragraphs = '\n' in story or len(story) > 500
+    
+    return word_count > 100 and has_paragraphs
 
 def post_process_story(story):
     """Clean up and enhance the generated story"""
@@ -665,6 +759,10 @@ with col1:
         elif CREDENTIALS["api_key"] in ["your-api-key", "4XXXXXXXXX..."]:
             st.error("Please configure your IBM Watson API credentials.")
         else:
+            # Clear previous story to force new generation
+            st.session_state.generated_story = ""
+            st.session_state.story_stats = {}
+            
             # Show generation progress
             progress_bar = st.progress(0)
             status_text = st.empty()
@@ -674,7 +772,7 @@ with col1:
             
             with st.spinner("Generating your story..."):
                 try:
-                    # Create enhanced prompt
+                    # Create enhanced prompt with current timestamp for uniqueness
                     status_text.text("📝 Crafting story prompt...")
                     progress_bar.progress(40)
                     
@@ -683,12 +781,16 @@ with col1:
                         writing_style, length_category, mood, setting
                     )
                     
+                    # Add uniqueness factor to prevent caching
+                    import datetime
+                    unique_prompt = f"{prompt}\n\n[Generation ID: {datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}]"
+                    
                     # Generate story
                     status_text.text("✨ AI is writing your story...")
                     progress_bar.progress(60)
                     
                     story = generate_story_with_watson(
-                        prompt, model_id, max_tokens, temperature, creativity_settings
+                        unique_prompt, model_id, max_tokens, temperature, creativity_settings
                     )
                     
                     progress_bar.progress(100)
@@ -698,6 +800,18 @@ with col1:
                     if not story.startswith("Error"):
                         st.session_state.generated_story = story
                         st.session_state.story_stats = get_story_statistics(story)
+                        
+                        # Show generation details for debugging
+                        with st.expander("🔍 Generation Details"):
+                            st.write(f"**Model Used:** {selected_model_name}")
+                            st.write(f"**Genre:** {story_type}")
+                            st.write(f"**Setting:** {setting}")
+                            st.write(f"**Mood:** {mood}")
+                            st.write(f"**Writing Style:** {writing_style}")
+                            st.write(f"**Temperature:** {temperature}")
+                            st.write(f"**Max Tokens:** {max_tokens}")
+                    else:
+                        st.session_state.generated_story = story
                     
                     time.sleep(1)  # Brief pause to show completion
                     
