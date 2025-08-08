@@ -464,13 +464,20 @@ def get_story_stats_enhanced(story):
     }
 
 # -------------------------------
-# Enhanced Text-to-Speech Function with Voice Options
+# Enhanced Text-to-Speech Function with Voice Options - FIXED
 # -------------------------------
 def create_enhanced_tts_html(text, voice_settings):
-    """Generate enhanced TTS controls with voice options"""
+    """Generate enhanced TTS controls with voice options - Fixed Unicode issue"""
     clean_text = re.sub(r'[^\w\s\.,!?;:\-\'"()]', '', text)
     clean_text = clean_text.replace('\n\n', '. ')
     clean_text = clean_text.replace('\n', ' ')
+    
+    # Escape the clean_text for JavaScript
+    clean_text_escaped = clean_text.replace('\\', '\\\\').replace('`', '\\`').replace('"', '\\"')
+    
+    # Calculate word count for time estimation
+    word_count = len(clean_text.split())
+    listening_time = max(1, word_count // 155)
     
     return f"""
     <div class="tts-controls">
@@ -504,7 +511,7 @@ def create_enhanced_tts_html(text, voice_settings):
         <div id="status" style="margin-top: 1rem; font-weight: bold; color: #333;">Ready to play</div>
         
         <div style="margin-top: 1rem; font-size: 12px; color: #666;">
-            Estimated listening time: ~{get_story_stats_enhanced(text)['listening_time']} minutes
+            Estimated listening time: ~{listening_time} minutes
         </div>
     </div>
     
@@ -516,6 +523,9 @@ def create_enhanced_tts_html(text, voice_settings):
         let currentRate = {voice_settings['rate']};
         let startTime = 0;
         let pausedTime = 0;
+        
+        // Store the text content
+        const storyText = "{clean_text_escaped}";
         
         function updateSpeed(newRate) {{
             currentRate = parseFloat(newRate);
@@ -544,7 +554,7 @@ def create_enhanced_tts_html(text, voice_settings):
                 synth.cancel();
             }}
             
-            utterance = new SpeechSynthesisUtterance(`{clean_text}`);
+            utterance = new SpeechSynthesisUtterance(storyText);
             utterance.rate = currentRate;
             utterance.pitch = {voice_settings['pitch']};
             utterance.volume = 1.0;
@@ -619,7 +629,7 @@ def create_enhanced_tts_html(text, voice_settings):
         function updateProgress() {{
             if (!isPlaying || isPaused) return;
             
-            const estimatedDuration = {len(clean_text.split())} / (currentRate * 2.5) * 1000; // rough estimate
+            const estimatedDuration = {word_count} / (currentRate * 2.5) * 1000; // rough estimate
             const elapsed = (Date.now() - startTime + pausedTime);
             const progress = Math.min((elapsed / estimatedDuration) * 100, 100);
             
@@ -631,7 +641,8 @@ def create_enhanced_tts_html(text, voice_settings):
             const totalSec = Math.floor((estimatedDuration % 60000) / 1000);
             
             document.getElementById('time-display').textContent = 
-                `${{elapsedMin.toString().padStart(2,'0')}}:${{elapsedSec.toString().padStart(2,'0')}} / ${{totalMin.toString().padStart(2,'0')}}:${{totalSec.toString().padStart(2,'0')}}`;
+                elapsedMin.toString().padStart(2,'0') + ':' + elapsedSec.toString().padStart(2,'0') + ' / ' + 
+                totalMin.toString().padStart(2,'0') + ':' + totalSec.toString().padStart(2,'0');
             
             if (isPlaying && !isPaused) {{
                 setTimeout(updateProgress, 1000);
