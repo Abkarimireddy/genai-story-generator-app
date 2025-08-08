@@ -138,31 +138,61 @@ def get_api_credentials():
 CREDENTIALS = get_api_credentials()
 VERSION = "2023-05-29"
 
-# Updated model options with currently working IBM Watson models
+# Official IBM Watson models available in us-south region (as of Jan 2025)
 MODEL_OPTIONS = {
-    # IBM Granite models (actively supported)
-    "IBM Granite 13B Chat": "ibm/granite-13b-chat-v2",
-    "IBM Granite 13B Instruct": "ibm/granite-13b-instruct-v2",
-    "IBM Granite 7B Lab": "ibm/granite-7b-lab",
+    # IBM Granite 3.3 Series (Latest - Most Recommended)
+    "🔥 IBM Granite 3.3 8B Instruct": "ibm/granite-3-3-8b-instruct",
     
-    # Meta Llama models (well supported)
-    "Meta Llama 2 70B Chat": "meta-llama/llama-2-70b-chat",
-    "Meta Llama 2 13B Chat": "meta-llama/llama-2-13b-chat",
-    "Meta Llama 2 7B Chat": "meta-llama/llama-2-7b-chat",
+    # IBM Granite 3 Series (Very Recent - Highly Recommended)
+    "⭐ IBM Granite 3 8B Instruct": "ibm/granite-3-8b-instruct",
+    "⭐ IBM Granite 3 2B Instruct": "ibm/granite-3-2b-instruct",
+    "IBM Granite 3.2 8B Instruct": "ibm/granite-3-2-8b-instruct",
     
-    # Mistral models (good performance)
-    "Mistral 7B Instruct": "mistralai/mistral-7b-instruct-v0.2",
+    # IBM Granite Legacy (Proven & Reliable)
+    "IBM Granite 13B Instruct v2": "ibm/granite-13b-instruct-v2",
+    
+    # IBM Granite Code Models (Great for structured stories)
+    "IBM Granite 8B Code Instruct": "ibm/granite-8b-code-instruct",
+    "IBM Granite 20B Code Instruct": "ibm/granite-20b-code-instruct",
+    "IBM Granite 34B Code Instruct": "ibm/granite-34b-code-instruct",
+    
+    # Meta Llama 4 Series (Latest - Excellent for Creative Writing)
+    "🚀 Llama 4 Maverick 17B": "meta-llama/llama-4-maverick-17b-128e-instruct-fp8",
+    "🚀 Llama 4 Scout 17B": "meta-llama/llama-4-scout-17b-16e-instruct",
+    
+    # Meta Llama 3.3 Series (Latest Stable)
+    "🔥 Llama 3.3 70B Instruct": "meta-llama/llama-3-3-70b-instruct",
+    
+    # Meta Llama 3.2 Series (Multimodal Capabilities)
+    "Llama 3.2 3B Instruct": "meta-llama/llama-3-2-3b-instruct",
+    "Llama 3.2 1B Instruct": "meta-llama/llama-3-2-1b-instruct",
+    
+    # Meta Llama 3.1 Series (Proven Performance)
+    "Llama 3.1 70B Instruct": "meta-llama/llama-3-1-70b-instruct",
+    "Llama 3.1 8B Instruct": "meta-llama/llama-3-1-8b-instruct",
+    "Llama 3.1 405B Instruct": "meta-llama/llama-3-405b-instruct",
+    
+    # Meta Llama 2 Series (Still Supported)
+    "Llama 2 13B Chat": "meta-llama/llama-2-13b-chat",
+    
+    # Mistral Models (Creative & Multilingual)
+    "🌟 Mistral Large": "mistralai/mistral-large",
+    "Mistral Medium 2505": "mistralai/mistral-medium-2505",
+    "Mistral Small 24B": "mistralai/mistral-small-24b-instruct-2501",
     "Mixtral 8x7B Instruct": "mistralai/mixtral-8x7b-instruct-v01",
     
-    # Google models (if available in your region)
-    "Google Flan T5 XL": "google/flan-t5-xl",
-    "Google Flan T5 XXL": "google/flan-t5-xxl",
+    # Google Models (Instruction Following)
+    "Google Flan-T5 XXL": "google/flan-t5-xxl",
+    "Google Flan-T5 XL": "google/flan-t5-xl",
+    "Google Flan-UL2": "google/flan-ul2",
     
-    # Code Llama (good for structured content)
-    "Code Llama 34B Instruct": "codellama/codellama-34b-instruct-hf",
+    # Specialized Models
+    "ALLaM 13B Instruct (Arabic)": "sdaia/allam-1-13b-instruct",
+    "JAIS 13B Chat (Arabic)": "core42/jais-13b-chat",
+    "ELYZA Japanese Llama2": "elyza/elyza-japanese-llama-2-7b-instruct",
     
-    # Alternative if others don't work
-    "IBM Granite 20B Code": "ibm/granite-20b-code-instruct-v1"
+    # BigScience Models
+    "MT0-XXL 13B (Multilingual)": "bigscience/mt0-xxl"
 }
 
 # -------------------------------
