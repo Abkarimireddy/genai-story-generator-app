@@ -2,7 +2,7 @@
 
 Welcome to the **GenAI Story Generator**, a creative storytelling web app powered by **IBM WatsonX**, built with **Streamlit**. This application generates rich, immersive stories based on user input like genre, character name, mood, setting, and style.
 
-🔗 **Live App**: [Click here to try it!](https://genai-story-app-abi-karimireddy.streamlit.app/)
+🔗 **Live App**: [Click here to try it!](https://genai-story-app-akar12.streamlit.app/)
 
 ---
 
